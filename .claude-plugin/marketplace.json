@@ -1,0 +1,11 @@
+{
+  "name": "usage-band",
+  "owner": { "name": "isonya-tools" },
+  "plugins": [
+    {
+      "name": "usage-band",
+      "source": "./",
+      "description": "プロンプト上の帯に5時間枠・週間枠の残量バーと実行中の動きを表示する"
+    }
+  ]
+}

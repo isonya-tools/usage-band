@@ -1,7 +1,8 @@
 {
   "name": "usage-band",
-  "version": "0.2.0",
-  "author": { "name": "isoko" },
-  "description": "プロンプト上の帯に5時間枠・週間枠の残量バーと実行中の動きを表示する",
-  "types": "./types/index.d.ts"
+  "version": "0.3.0",
+  "author": {
+    "name": "isoko"
+  },
+  "description": "Windows 用デスクトップアプリ UsageBand に、Claude の使用率と実行状況を渡す mod"
 }

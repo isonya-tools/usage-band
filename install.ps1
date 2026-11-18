@@ -19,12 +19,10 @@ if (-not $claude) {
 if (-not $claude) { throw 'claude command not found. Install the Claude desktop app (Code tab) first.' }
 
 & $claude plugin install usage-band --marketplace $repo
-if ($LASTEXITCODE -ne 0) {
-  # already installed: update it instead
-  & $claude plugin marketplace update usage-band
-  & $claude plugin update usage-band@usage-band
-  if ($LASTEXITCODE -ne 0) { throw 'Failed to install or update the mod.' }
-}
+if ($LASTEXITCODE -ne 0) { throw 'Failed to install the mod.' }
+# if it was already installed, bring it up to date
+& $claude plugin marketplace update usage-band
+& $claude plugin update usage-band@usage-band
 
 # ---- [2/3] app ----
 Write-Host '[2/3] Downloading the Windows app...'

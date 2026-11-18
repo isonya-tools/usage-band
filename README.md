@@ -1,51 +1,65 @@
 # usage-band
 
-Claude Code の入力欄の上に「使用量の帯」を表示する mod です。
+**Windows 版 Claude デスクトップアプリ(Code タブ)用**の mod です。
+入力欄の上に「使用量の帯」を表示します。
 
 - 5時間枠・週間枠の使用率バーと、リセット時刻
-- 経過時間に対する消費ペースの縦線(使用率がペースを超えるとバーが赤系に変化)
-- 実行中のツール名、経過時間、サブエージェント数、無反応の秒数
+- 経過時間に対する消費ペースの縦線(使うペースが速すぎるとバーが赤系に変わります)
+- 実行中の作業内容、経過時間、無反応の秒数
 
-## インストール方法
+## インストール方法(PowerShell でコピペするだけ)
 
-Claude Code が入っていれば、次のどちらか1つで入ります。
+所要時間は1分ほどです。パソコンに詳しくなくても大丈夫です。
 
-### 方法1: Claude Code の入力欄から(ターミナル版)
+### 1. PowerShell を開く
 
-Claude Code を起動し、入力欄に次を貼り付けて Enter。
+1. 画面左下の **スタートボタン(Windows マーク)を右クリック**
+2. 出てきたメニューから **「ターミナル」** をクリック
+   (「Windows PowerShell」と書かれたものでも OK)
+3. 黒い(または青い)文字入力の画面が開けば準備完了です
+
+### 2. コマンドをコピーして貼り付ける
+
+下の灰色の枠の右上にあるコピーボタンでコピーします。
+PowerShell の画面で **右クリック**(または `Ctrl + V`)して貼り付け、**Enter キー**を押します。
+
+```powershell
+& "$env:USERPROFILE\.local\bin\claude.exe" plugin install usage-band --marketplace isonya-tools/usage-band
+```
+
+### 3. 完了を確認する
+
+次のような表示が出れば成功です。
 
 ```
-/plugin install usage-band --marketplace isonya-tools/usage-band
+Installed usage-band
 ```
 
-「Add marketplace?」と聞かれたら `y`、続けてスコープは Enter(user)で OK。
-`Installed usage-band.` と出れば完了です。
+(英語の文章が数行出ます。赤い文字で `error` と出なければ問題ありません。)
 
-### 方法2: コマンドプロンプト / PowerShell から
+### 4. Claude を再起動する
 
-```
-claude plugin install usage-band --marketplace isonya-tools/usage-band
-```
+デスクトップアプリを**いったん閉じて、もう一度開き**、Code タブで新しいセッションを始めてください。
+入力欄の上に帯が表示されます。
 
-`claude` が見つからない場合は、Claude Code のインストール先(Windows なら `%USERPROFILE%\.local\bin`)を PATH に追加するか、フルパスで実行してください。
+## うまくいかないとき
 
-### 方法3: デスクトップアプリ
+- **「...claude.exe ... が見つかりません」と出る**
+  → Claude Code が別の場所に入っています。次のコマンドを試してください。
 
-`/plugin` が使えないため、画面から追加します。
+  ```powershell
+  claude plugin install usage-band --marketplace isonya-tools/usage-band
+  ```
 
-1. 入力欄の横の「+」を押す
-2. 「Plugins」を選ぶ
-3. 「Add marketplace」に `isonya-tools/usage-band` と入力
-4. 「Add plugin」から `usage-band` を追加
+- **帯が出ない**
+  → アプリを完全に終了してから開き直し、新しいセッションで確認してください。
 
-## 反映のしかた
+## アンインストール(削除)
 
-インストール後、Claude Code を再起動(または新しいセッションを開始)すると、入力欄の上に帯が出ます。
+PowerShell に次を貼り付けて Enter。
 
-## アンインストール
-
-```
-/plugin uninstall usage-band
+```powershell
+& "$env:USERPROFILE\.local\bin\claude.exe" plugin uninstall usage-band
 ```
 
 ## ライセンス

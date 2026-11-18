@@ -39,8 +39,10 @@ Get-Process UsageBand -ErrorAction SilentlyContinue | Stop-Process -Force
 Start-Process -FilePath $file -ArgumentList '/S' -Wait
 Remove-Item $file -ErrorAction SilentlyContinue
 
-$exe = Join-Path $env:LOCALAPPDATA 'Programs\UsageBand\UsageBand.exe'
-if (Test-Path $exe) {
+$exe = @('usage-band-app', 'UsageBand') |
+  ForEach-Object { Join-Path $env:LOCALAPPDATA "Programs\$_\UsageBand.exe" } |
+  Where-Object { Test-Path $_ } | Select-Object -First 1
+if ($exe) {
   if (-not (Get-Process UsageBand -ErrorAction SilentlyContinue)) { Start-Process $exe }
 } else {
   Write-Host 'Note: UsageBand.exe was not found at the default location. Start it from the Start menu.'

@@ -1,4 +1,4 @@
-# usage-band
+# 利用状況ビュー for Claude
 
 Windows 版 Claude デスクトップアプリ(Code タブ)用の mod です。
 入力欄の上に、5時間枠・週間枠の使用率バーと実行中の状態を表示します。

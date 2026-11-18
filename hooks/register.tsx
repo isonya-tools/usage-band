@@ -198,11 +198,11 @@ export const register: Register = on => {
     const what = !running ? '待機中' : current || (subagents > 0 ? 'サブ' : '考え中')
     const activity = (
       <Box flexDirection="column" width={actW} flexShrink={0} justifyContent="center" alignItems="center">
-        <Text color={running ? TEXT : IDLE}>
+        <Text color={running ? TEXT : IDLE} wrap="truncate-end">
           {what}
           {running && subagents > 0 ? ` ×${subagents}` : ''}
         </Text>
-        <Box flexDirection="row" gap={2} alignItems="center">
+        <Box flexDirection="row" gap={2} alignItems="center" flexShrink={0}>
           <Box flexDirection="row" gap={1}>
             {[0, 1, 2].map(i => (
               <Text key={i} color={running && i === phase ? dotColor : DOT_OFF}>
@@ -210,9 +210,15 @@ export const register: Register = on => {
               </Text>
             ))}
           </Box>
-          <Text color={running ? SUB : IDLE}>{clock(running ? now - turnStart : 0)}</Text>
-          {quiet > 20_000 ? <Text color={dotColor}>無反応 {Math.round(quiet / 1000)}s</Text> : null}
+          <Text color={running ? SUB : IDLE} wrap="truncate-end">
+            {clock(running ? now - turnStart : 0)}
+          </Text>
         </Box>
+        {quiet > 20_000 ? (
+          <Text color={dotColor} wrap="truncate-end">
+            無反応 {Math.round(quiet / 1000)}s
+          </Text>
+        ) : null}
       </Box>
     )
 

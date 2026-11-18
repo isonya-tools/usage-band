@@ -41,7 +41,11 @@ $exe = @('usage-band-app', 'UsageBand') |
   ForEach-Object { Join-Path $env:LOCALAPPDATA "Programs\$_\UsageBand.exe" } |
   Where-Object { Test-Path $_ } | Select-Object -First 1
 if ($exe) {
-  if (-not (Get-Process UsageBand -ErrorAction SilentlyContinue)) { Start-Process $exe }
+  # Launch through Explorer so the app is not tied to this PowerShell / Claude process
+  # and keeps running after they close.
+  if (-not (Get-Process UsageBand -ErrorAction SilentlyContinue)) {
+    Start-Process explorer.exe -ArgumentList ('"' + $exe + '"')
+  }
 } else {
   Write-Host 'Note: UsageBand.exe was not found at the default location. Start it from the Start menu.'
 }

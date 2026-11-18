@@ -5,7 +5,7 @@ Windows 版 Claude デスクトップアプリ(Code タブ)用の mod です。
 
 ## インストール
 
-1. スタートボタンを右クリックし、「ターミナル」を開く
+1. スタートボタンを右クリックし、「Windows PowerShell」を開く
 2. 入力欄の行の先頭が `PS` で始まっていることを確認する
    `PS` で始まっていない場合は、上のタブ横の「v」を押して「Windows PowerShell」を選ぶ
 3. 次のコマンドを貼り付けて Enter
@@ -25,7 +25,7 @@ claude plugin install usage-band --marketplace isonya-tools/usage-band
 
 ## アンインストール
 
-1. スタートボタンを右クリックし、「ターミナル」を開く
+1. スタートボタンを右クリックし、「Windows PowerShell」を開く
 2. 入力欄の行の先頭が `PS` で始まっていることを確認する
    `PS` で始まっていない場合は、上のタブ横の「v」を押して「Windows PowerShell」を選ぶ
 3. 次のコマンドを貼り付けて Enter

@@ -54,6 +54,19 @@ const clock = (ms: number) => {
   return `${Math.floor(s / 60)}:${pad(s % 60)}`
 }
 
+const SID = Math.random().toString(36).slice(2, 10)
+
+// デスクトップ版が読む状態ファイルを書き出す
+const flush = async ($: any, dir: string, snap: Record<string, unknown>) => {
+  if (!dir) return
+  try {
+    const ls = await read($, limits)
+    await $.fs.write(`${dir}\\${SID}.json`, JSON.stringify({ id: SID, updatedAt: Date.now(), ...snap, limits: ls }))
+  } catch {
+    // 書き出しに失敗しても帯の表示には影響させない
+  }
+}
+
 export const register: Register = on => {
   // 動作状況(モジュール内の値。描画ごとに読む)
   let turnStart = 0
@@ -61,20 +74,35 @@ export const register: Register = on => {
   let current = ''
   let running = false
   let subagents = 0
+  let limitsAt = 0
+  // デスクトップ版が読む状態ファイルの置き場(%USERPROFILE%\.claude\usage-band\state)
+  let stateDir = ''
 
   const touch = () => {
     lastSignal = Date.now()
   }
 
+  const snap = () => ({ running, turnStart, lastSignal, current, subagents, limitsAt })
+
   on('session.start', async ($, e, next) => {
     const usage = await $.session.usage()
     await update($, limits, () => usage.rateLimits.map(r => ({ ...r })))
+    limitsAt = Date.now()
 
-    // 動作中は0.5秒ごと、待機中は30秒ごとに描き直す
+    try {
+      const home = await $.env.get('USERPROFILE')
+      stateDir = home ? `${home}\\.claude\\usage-band\\state` : ''
+    } catch {
+      stateDir = ''
+    }
+    void flush($, stateDir, snap())
+
+    // 動作中は0.5秒ごと、待機中は30秒ごとに描き直す。状態ファイルは動作中1秒ごと、待機中30秒ごと
     let n = 0
     $.clock.every(500, () => {
       n += 1
       if (running || n % 60 === 0) void update($, tick, v => v + 1)
+      if ((running && n % 2 === 0) || n % 60 === 0) void flush($, stateDir, snap())
     })
 
     return next(e)
@@ -83,6 +111,8 @@ export const register: Register = on => {
   on('session.measure', async ($, e, next) => {
     if (e.changed.includes('rateLimits')) {
       await update($, limits, () => e.rateLimits.map(r => ({ ...r })))
+      limitsAt = Date.now()
+      void flush($, stateDir, snap())
     }
     return next(e)
   })
@@ -96,6 +126,7 @@ export const register: Register = on => {
       current = ''
       touch()
     }
+    void flush($, stateDir, snap())
     return next(e)
   })
 
@@ -108,6 +139,7 @@ export const register: Register = on => {
       subagents = 0
       void update($, tick, v => v + 1)
     }
+    void flush($, stateDir, snap())
     return next(e)
   })
 

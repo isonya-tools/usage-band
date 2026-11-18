@@ -1,6 +1,6 @@
 {
   "name": "usage-band",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "author": { "name": "isoko" },
   "description": "プロンプト上の帯に5時間枠・週間枠の残量バーと実行中の動きを表示する",
   "types": "./types/index.d.ts"

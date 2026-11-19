@@ -80,6 +80,7 @@ let backoffMs = 0
 let polling = false
 let cacheFile
 let lastModActivity = 0 // mod の更新を最後に見た時刻。0 は一度も見ていない(mod 未導入)
+let lastSavedActivity = 0
 let oneShotUntil = 0 // この時刻までは、アイドル中でも 1 回だけ API を呼んでよい(起動時・手動更新)
 
 // 前回の値と待ち状態を保存して、再起動・更新のたびに API を叩かないようにする
@@ -153,7 +154,15 @@ const poll = async () => {
   }
   // Claude Code の mod が 5 分以内に更新していれば、その値を使う(API は呼ばない)
   const mod = readMod()
-  if (mod && (mod.limitsAt || 0) > lastModActivity) lastModActivity = mod.limitsAt
+  if (mod && (mod.limitsAt || 0) > lastModActivity) {
+    // mod の最終更新は、再起動してもアイドル判定を続けられるよう、1 分に 1 回まで保存する
+    const first = lastModActivity === 0
+    lastModActivity = mod.limitsAt
+    if (first || mod.limitsAt - lastSavedActivity >= 60_000) {
+      lastSavedActivity = mod.limitsAt
+      saveCache()
+    }
+  }
   if (mod && Date.now() - (mod.limitsAt || 0) < MOD_FRESH_MS) {
     if ((mod.limitsAt || 0) >= usageState.updatedAt) {
       usageState = { limits: mod.limits, updatedAt: mod.limitsAt, error: null, nextPollAt: 0 }

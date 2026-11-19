@@ -85,7 +85,7 @@ const getUsage = async ({ forceRefresh = false } = {}) => {
     if (e instanceof UsageError) throw e
     throw new UsageError('network', 'request failed')
   }
-  if (res.status === 429) throw new UsageError('rate', 'rate limited', Number(res.headers.get('retry-after')) || 120)
+  if (res.status === 429) throw new UsageError('rate', 'rate limited', Number(res.headers.get('retry-after')) || 0)
   if (res.status === 401 || res.status === 403) throw new UsageError('login', 'unauthorized')
   if (!res.ok) throw new UsageError('http', `usage ${res.status}`)
   const limits = normalize(await res.json())

@@ -39,9 +39,13 @@ const barSvg = (used, pace, fill, W) => {
 
 const NOTES = {
   login: 'Claude にログインしてください(PowerShell で claude auth login)',
-  rate: '取得を待っています(しばらく後に再試行します)',
   network: '通信できません。再試行しています…',
   http: '使用率を取得できません。再試行しています…',
+}
+// アクセスが多すぎて断られたとき(429): 次に取りに行くまでの目安を出す
+const rateNote = () => {
+  const min = Math.max(1, Math.ceil(((S.nextPollAt || 0) - Date.now()) / 60e3))
+  return `取得を待っています(約${min}分後に再試行します)`
 }
 
 const render = () => {
@@ -65,10 +69,12 @@ const render = () => {
 
   if (!rows) {
     // データがまだないとき: 2行分の高さを保って、理由を出す
-    rows = `<div class="note">${esc(NOTES[S.error] || '使用率を取得しています…')}</div>`
+    const note = S.error === 'rate' ? rateNote() : NOTES[S.error] || '使用率を取得しています…'
+    rows = `<div class="note">${esc(note)}</div>`
   }
   // 取得に失敗している間は、前回の値を薄く表示する
-  const stale = S.limits.length > 0 && !!S.error
+  // 取得に失敗している、または 15 分以上更新できていないときは薄くする
+  const stale = S.limits.length > 0 && (!!S.error || (S.updatedAt && now - S.updatedAt > 15 * 60e3))
   panel.className = stale ? 'stale' : ''
   panel.innerHTML = `<div class="left">${rows}</div>`
 

@@ -6,7 +6,11 @@ const { getUsage } = require('./usage')
 const BASE_W = 400 // 表示の基準の幅(この幅を 100% とする)
 const MIN_W = 240
 const MAX_W = 1600
-const POLL_MS = 30_000 // 使用率を取りに行く間隔
+// 使用率 API は非公式で、回数制限が厳しい(429 が数分〜数時間続く報告がある)ため、間隔は長く取る
+const POLL_MS = 5 * 60_000 // 通常の取得間隔
+const BACKOFF_FIRST = 5 * 60_000 // 429 のあとの最初の待ち。続けて断られるたびに倍にする
+const BACKOFF_MAX = 30 * 60_000
+const RETRY_QUICK_MS = 60_000 // 通信できない・未ログインのとき(API には触れない)
 const argv = process.argv
 const SAMPLE = argv.includes('--sample')
 const SHOT = argv.includes('--shot') ? argv[argv.indexOf('--shot') + 1] : null
@@ -63,10 +67,30 @@ const loadSettings = () => {
 
 // ---- 使用率の取得 ---------------------------------------------------------
 
-let usageState = { limits: [], updatedAt: 0, error: null }
+let usageState = { limits: [], updatedAt: 0, error: null, nextPollAt: 0 }
 let lastSent = ''
 let nextPollAt = 0
+let backoffMs = 0
 let polling = false
+let cacheFile
+
+// 前回の値と待ち状態を保存して、再起動・更新のたびに API を叩かないようにする
+const saveCache = () => {
+  try {
+    fs.writeFileSync(
+      cacheFile,
+      JSON.stringify({ limits: usageState.limits, updatedAt: usageState.updatedAt, nextPollAt, backoffMs }),
+    )
+  } catch {}
+}
+const loadCache = () => {
+  try {
+    const c = JSON.parse(fs.readFileSync(cacheFile, 'utf8'))
+    if (Array.isArray(c.limits)) usageState = { limits: c.limits, updatedAt: c.updatedAt || 0, error: null, nextPollAt: c.nextPollAt || 0 }
+    nextPollAt = c.nextPollAt || 0
+    backoffMs = c.backoffMs || 0
+  } catch {}
+}
 
 const sampleState = () => {
   const now = Date.now()
@@ -77,6 +101,7 @@ const sampleState = () => {
     ],
     updatedAt: now,
     error: null,
+    nextPollAt: 0,
   }
 }
 
@@ -98,15 +123,26 @@ const poll = async () => {
   polling = true
   try {
     const limits = await getUsage()
-    usageState = { limits, updatedAt: Date.now(), error: null }
+    backoffMs = 0
     nextPollAt = Date.now() + POLL_MS
+    usageState = { limits, updatedAt: Date.now(), error: null, nextPollAt }
   } catch (e) {
     // 取得できなかったときは、前回の値を残したまま理由だけ伝える
-    usageState = { ...usageState, error: e.code || 'http' }
-    nextPollAt = Date.now() + (e.code === 'rate' ? Math.max(e.retryAfterSec || 120, 60) * 1000 : e.code === 'login' ? 60_000 : POLL_MS)
+    const code = e.code || 'http'
+    if (code === 'rate') {
+      // 断られたら待ちを倍にする(5→10→20→30分)。サーバーが待ち時間を返したら、それ以上待つ
+      backoffMs = backoffMs ? Math.min(backoffMs * 2, BACKOFF_MAX) : BACKOFF_FIRST
+      nextPollAt = Date.now() + Math.max(backoffMs, (e.retryAfterSec || 0) * 1000)
+    } else if (code === 'login' || code === 'network') {
+      nextPollAt = Date.now() + RETRY_QUICK_MS
+    } else {
+      nextPollAt = Date.now() + POLL_MS
+    }
+    usageState = { ...usageState, error: code, nextPollAt }
   } finally {
     polling = false
   }
+  saveCache()
   send()
 }
 
@@ -354,7 +390,9 @@ if (!SHOT && !app.requestSingleInstanceLock()) {
 
   app.whenReady().then(() => {
     settingsFile = path.join(app.getPath('userData'), 'settings.json')
+    cacheFile = path.join(app.getPath('userData'), 'usage-cache.json')
     loadSettings()
+    if (!SAMPLE && !SHOT) loadCache()
     if (SHOT) {
       settings.pos = null
       settings.visible = true
@@ -397,7 +435,8 @@ if (!SHOT && !app.requestSingleInstanceLock()) {
       powerMonitor.on(ev, () => {
         suppressMove(30000)
         if (ev === 'resume' || ev === 'unlock-screen') {
-          nextPollAt = 0 // 復帰したらすぐ取り直す
+          // 復帰したら早めに取り直す(ただし 429 の待ちの途中なら待つ)
+          if (!backoffMs) nextPollAt = Math.min(nextPollAt, Date.now() + 10_000)
           setTimeout(place, 3000)
         }
       })

@@ -1,6 +1,6 @@
 {
   "name": "usage-band-app",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Claude の使用率(5時間・週間)をデスクトップに常時表示する Windows アプリ",
   "main": "main.js",
   "author": "isonya-tools",

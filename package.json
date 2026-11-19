@@ -1,0 +1,40 @@
+{
+  "name": "usage-band-app",
+  "version": "1.0.0",
+  "description": "Claude の使用率(5時間・週間)をデスクトップに常時表示する Windows アプリ",
+  "main": "main.js",
+  "author": "isonya-tools",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "icon": "node tools/make-icon.js",
+    "shot": "electron . --sample --shot shot.png",
+    "dist": "electron-builder --win nsis"
+  },
+  "devDependencies": {
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.isonya-tools.usage-band-app",
+    "productName": "UsageBand",
+    "files": [
+      "main.js",
+      "usage.js",
+      "preload.js",
+      "renderer/**",
+      "assets/**",
+      "package.json"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "assets/icon.png",
+      "signAndEditExecutable": false
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "deleteAppDataOnUninstall": false
+    }
+  }
+}

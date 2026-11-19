@@ -1,0 +1,107 @@
+:root {
+  --track: #3b3950;
+  --text: #cfcbe0;
+  --sub: #8f8ba3;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  overflow: hidden;
+  font-family: 'Yu Gothic UI', 'Segoe UI', sans-serif;
+  font-size: 12px;
+  color: var(--text);
+  user-select: none;
+  cursor: default;
+}
+
+#panel {
+  box-sizing: border-box;
+  width: 400px;
+  padding: 10px 16px;
+  background: rgba(26, 25, 38, 0.95);
+  border: 1px solid #2f2d44;
+  border-radius: 10px;
+}
+
+#panel.stale .row {
+  opacity: 0.5;
+}
+
+body.draggable #panel {
+  -webkit-app-region: drag;
+  cursor: move;
+}
+
+.left {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  height: 14px;
+}
+
+.label {
+  width: 44px;
+  flex-shrink: 0;
+}
+
+.bar {
+  flex: 1;
+  min-width: 60px;
+  height: 14px;
+  line-height: 0;
+}
+
+.pct {
+  width: 40px;
+  flex-shrink: 0;
+  text-align: right;
+}
+
+.reset {
+  width: 76px;
+  flex-shrink: 0;
+  text-align: right;
+  color: var(--sub);
+  white-space: nowrap;
+}
+
+.note {
+  min-height: 32px; /* 2行分(データが来ても高さが変わらない) */
+  color: var(--sub);
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+}
+
+/* 左右の端をつかんで幅を変える */
+.grip {
+  display: none;
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  width: 8px;
+  cursor: ew-resize;
+  -webkit-app-region: no-drag;
+}
+.grip.left {
+  left: 0;
+}
+.grip.right {
+  right: 0;
+}
+body.resizable .grip {
+  display: block;
+}
+body.resizable .grip:hover {
+  background: rgba(196, 181, 253, 0.25);
+}

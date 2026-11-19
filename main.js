@@ -16,6 +16,7 @@ const DEFAULTS = {
   alwaysOnTop: true, // true: 常に最前面 + クリック透過(位置・大きさは変えられない)
   lockPosition: false, // true: 動かせない
   lockSize: false, // true: 大きさを変えられない
+  opacityMode: 'none', // 'none': 不透明 / 'all': 全体を50%透過 / 'bg': 背景だけ50%透過
   // 位置: ウィンドウの左上の座標と、そのときのディスプレイの構成。null は右上
   // (ディスプレイの ID は再起動で変わるため、大きさと位置で見分ける)
   pos: null, // { x, y, display: { x, y, width, height, scaleFactor } }
@@ -153,7 +154,7 @@ const resize = () => {
 
 const sendConfig = () => {
   if (!win || win.isDestroyed()) return
-  win.webContents.send('config', { canDrag: !lockedPos(), canResize: !lockedSize() })
+  win.webContents.send('config', { canDrag: !lockedPos(), canResize: !lockedSize(), opacityMode: settings.opacityMode })
 }
 
 const applyWindowSettings = () => {
@@ -259,6 +260,25 @@ const buildMenu = () => {
     },
     { type: 'separator' },
     {
+      label: '全体を透過(50%)',
+      type: 'checkbox',
+      checked: settings.opacityMode === 'all',
+      click: () => {
+        settings.opacityMode = settings.opacityMode === 'all' ? 'none' : 'all'
+        refresh()
+      },
+    },
+    {
+      label: '背景のみ透過(50%)',
+      type: 'checkbox',
+      checked: settings.opacityMode === 'bg',
+      click: () => {
+        settings.opacityMode = settings.opacityMode === 'bg' ? 'none' : 'bg'
+        refresh()
+      },
+    },
+    { type: 'separator' },
+    {
       label: 'Windows 起動時に自動で起動',
       type: 'checkbox',
       checked: app.getLoginItemSettings().openAtLogin,
@@ -338,6 +358,7 @@ if (!SHOT && !app.requestSingleInstanceLock()) {
       settings.alwaysOnTop = false
       settings.lockPosition = false
       settings.lockSize = false
+      settings.opacityMode = (argv.find(a => a.startsWith('--op=')) || '--op=none').slice(5)
       settings.width = argv.includes('--wide') ? 800 : argv.includes('--small') ? 280 : BASE_W
     }
     createWindow()

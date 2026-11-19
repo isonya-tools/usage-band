@@ -92,6 +92,8 @@ window.api.onState(s => {
 window.api.onConfig(c => {
   document.body.classList.toggle('draggable', c.canDrag)
   document.body.classList.toggle('resizable', c.canResize)
+  document.body.classList.toggle('op-all', c.opacityMode === 'all')
+  document.body.classList.toggle('op-bg', c.opacityMode === 'bg')
 })
 
 // ウィンドウ上の右クリックでも、タスクトレイと同じメニューを出す

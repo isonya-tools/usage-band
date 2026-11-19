@@ -24,14 +24,26 @@ const resetText = (iso, withDate) => {
   return withDate ? `${d.getMonth() + 1}/${d.getDate()} ${hm}` : hm
 }
 
+// 週間のバーを 1 日ごと(24 時間ごと)に区切る、オレンジの細い線。days が 7 なら 6 本
+const DAY_LINE = '#f5a25d'
+const dayLines = (W, days) => {
+  let s = ''
+  for (let k = 1; k < days; k++) {
+    // バーの中は控えめに(薄め)、そのまま下へ少しだけ飛び出させる
+    s += `<rect x="${(k * W) / days - 0.5}" y="4" width="1" height="10" fill="${DAY_LINE}" opacity="0.8"/>`
+  }
+  return s
+}
+
 // 細く、角を丸めたバー。縦線はバーより少しだけ高い
-const barSvg = (used, pace, fill, W) => {
+const barSvg = (used, pace, fill, W, days = 0) => {
   const u = (used / 100) * W
   const m = Math.max(0, Math.min(W - 3, (pace / 100) * W - 1.5))
   return (
     `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="14" viewBox="0 0 ${W} 14">` +
     `<rect x="0" y="4" width="${W}" height="6" rx="3" fill="${TRACK}"/>` +
     (u > 0 ? `<rect x="0" y="4" width="${Math.max(6, u)}" height="6" rx="3" fill="${fill}"/>` : '') +
+    dayLines(W, days) +
     `<rect x="${m}" y="1" width="3" height="12" rx="1.5" fill="${MARK}"/>` +
     `</svg>`
   )
@@ -60,7 +72,7 @@ const render = () => {
     const resetAt = l.resetsAt ? Date.parse(l.resetsAt) : now + w.ms
     const pace = expired ? 0 : clamp(100 - ((resetAt - now) / w.ms) * 100)
     const fill = used > pace ? WARN : OK
-    bars.push({ id: w.kind, used, pace, fill })
+    bars.push({ id: w.kind, used, pace, fill, days: w.kind === 'seven_day' ? 7 : 0 })
     rows +=
       `<div class="row"><div class="label">${w.label}</div><div class="bar" id="bar-${w.kind}"></div>` +
       `<div class="pct">${Math.round(used)}%</div>` +
@@ -81,7 +93,7 @@ const render = () => {
   for (const b of bars) {
     const el = document.getElementById('bar-' + b.id)
     const W = Math.max(60, Math.round(el.clientWidth))
-    el.innerHTML = barSvg(b.used, b.pace, b.fill, W)
+    el.innerHTML = barSvg(b.used, b.pace, b.fill, W, b.days)
   }
 
   const h = Math.ceil(panel.getBoundingClientRect().height)

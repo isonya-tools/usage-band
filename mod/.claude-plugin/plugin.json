@@ -1,0 +1,6 @@
+{
+  "name": "usage-band",
+  "version": "1.0.0",
+  "author": { "name": "isonya-tools" },
+  "description": "Claude Code の使用率を、デスクトップアプリ UsageBand に渡す(画面には何も表示しません)"
+}

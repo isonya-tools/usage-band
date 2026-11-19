@@ -1,6 +1,7 @@
 const { app, BrowserWindow, Tray, Menu, screen, ipcMain, nativeImage, powerMonitor } = require('electron')
 const fs = require('fs')
 const path = require('path')
+const os = require('os')
 const { getUsage } = require('./usage')
 
 const BASE_W = 400 // 表示の基準の幅(この幅を 100% とする)
@@ -11,6 +12,9 @@ const POLL_MS = 5 * 60_000 // 通常の取得間隔
 const BACKOFF_FIRST = 5 * 60_000 // 429 のあとの最初の待ち。続けて断られるたびに倍にする
 const BACKOFF_MAX = 30 * 60_000
 const RETRY_QUICK_MS = 60_000 // 通信できない・未ログインのとき(API には触れない)
+// Claude Code の mod が書き出す状態ファイル。これが新しいあいだは API を呼ばない
+const MOD_DIR = path.join(os.homedir(), '.claude', 'usage-band', 'state')
+const MOD_FRESH_MS = 5 * 60_000
 const argv = process.argv
 const SAMPLE = argv.includes('--sample')
 const SHOT = argv.includes('--shot') ? argv[argv.indexOf('--shot') + 1] : null
@@ -114,10 +118,47 @@ const send = () => {
   }
 }
 
+// mod が書き出した使用率のうち、いちばん新しいものを返す
+const readMod = () => {
+  let best = null
+  let files = []
+  try {
+    files = fs.readdirSync(MOD_DIR).filter(f => f.endsWith('.json'))
+  } catch {
+    return null
+  }
+  const now = Date.now()
+  for (const f of files) {
+    try {
+      const d = JSON.parse(fs.readFileSync(path.join(MOD_DIR, f), 'utf8'))
+      if (now - (d.updatedAt || 0) > 24 * 3600e3) {
+        fs.unlinkSync(path.join(MOD_DIR, f)) // 古いセッションの残り
+        continue
+      }
+      if (Array.isArray(d.limits) && d.limits.length && (!best || (d.limitsAt || 0) > (best.limitsAt || 0))) best = d
+    } catch {}
+  }
+  return best
+}
+
 const poll = async () => {
   if (SAMPLE) {
     usageState = sampleState()
     return send()
+  }
+  // Claude Code の mod が 5 分以内に更新していれば、その値を使う(API は呼ばない)
+  const mod = readMod()
+  if (mod && Date.now() - (mod.limitsAt || 0) < MOD_FRESH_MS) {
+    if ((mod.limitsAt || 0) >= usageState.updatedAt) {
+      usageState = { limits: mod.limits, updatedAt: mod.limitsAt, error: null, nextPollAt: 0 }
+      send()
+    }
+    return
+  }
+  // mod が更新されていない(Claude Code が止まっている、mod が未導入など)ときは API で取る。
+  // API の結果より新しい mod の値があれば、それを先に表示しておく
+  if (mod && (mod.limitsAt || 0) > usageState.updatedAt) {
+    usageState = { ...usageState, limits: mod.limits, updatedAt: mod.limitsAt }
   }
   if (polling || Date.now() < nextPollAt) return
   polling = true

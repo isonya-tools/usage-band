@@ -1,0 +1,11 @@
+{
+  "name": "usage-band",
+  "owner": { "name": "isonya-tools" },
+  "plugins": [
+    {
+      "name": "usage-band",
+      "source": "./mod",
+      "description": "Claude Code の使用率を、デスクトップアプリ UsageBand に渡す(画面には何も表示しません)"
+    }
+  ]
+}

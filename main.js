@@ -16,7 +16,7 @@ const DEFAULTS = {
   alwaysOnTop: true, // true: 常に最前面 + クリック透過(位置・大きさは変えられない)
   lockPosition: false, // true: 動かせない
   lockSize: false, // true: 大きさを変えられない
-  opacityMode: 'none', // 'none': 不透明 / 'all': 全体を50%透過 / 'bg': 背景だけ50%透過
+  opacityMode: 'none', // 'none': 不透明 / '50': 背景の不透明度 50% / '80': 背景の不透明度 80%(文字とバーははっきり)
   // 位置: ウィンドウの左上の座標と、そのときのディスプレイの構成。null は右上
   // (ディスプレイの ID は再起動で変わるため、大きさと位置で見分ける)
   pos: null, // { x, y, display: { x, y, width, height, scaleFactor } }
@@ -49,6 +49,9 @@ const loadSettings = () => {
     raw = JSON.parse(fs.readFileSync(settingsFile, 'utf8'))
   } catch {}
   settings = { ...DEFAULTS, ...raw }
+  // 透過の旧設定(全体を透過は廃止。背景のみは 50% に引き継ぐ)
+  if (raw.opacityMode === 'bg') settings.opacityMode = '50'
+  else if (!['none', '50', '80'].includes(settings.opacityMode)) settings.opacityMode = 'none'
   if ((raw.v || 0) < 4) {
     // 旧版(動作表示つき)から: 大きさは新しい基準に合わせて戻す。位置は引き継ぐ
     settings.width = BASE_W
@@ -260,20 +263,20 @@ const buildMenu = () => {
     },
     { type: 'separator' },
     {
-      label: '全体を透過(50%)',
+      label: '透過 50%',
       type: 'checkbox',
-      checked: settings.opacityMode === 'all',
+      checked: settings.opacityMode === '50',
       click: () => {
-        settings.opacityMode = settings.opacityMode === 'all' ? 'none' : 'all'
+        settings.opacityMode = settings.opacityMode === '50' ? 'none' : '50'
         refresh()
       },
     },
     {
-      label: '背景のみ透過(50%)',
+      label: '透過 80%',
       type: 'checkbox',
-      checked: settings.opacityMode === 'bg',
+      checked: settings.opacityMode === '80',
       click: () => {
-        settings.opacityMode = settings.opacityMode === 'bg' ? 'none' : 'bg'
+        settings.opacityMode = settings.opacityMode === '80' ? 'none' : '80'
         refresh()
       },
     },

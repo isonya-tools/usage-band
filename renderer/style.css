@@ -30,13 +30,14 @@ body {
   opacity: 0.5;
 }
 
-/* 透過: 全体(文字・バーも薄く)/ 背景のみ(文字・バーははっきり) */
-body.op-all #panel {
-  opacity: 0.5;
-}
-body.op-bg #panel {
+/* 透過: 背景だけを半透明にする(文字・バーははっきり) */
+body.op-50 #panel {
   background: rgba(26, 25, 38, 0.5);
   border-color: rgba(47, 45, 68, 0.6);
+}
+body.op-80 #panel {
+  background: rgba(26, 25, 38, 0.8);
+  border-color: rgba(47, 45, 68, 0.8);
 }
 
 body.draggable #panel {

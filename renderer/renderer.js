@@ -1,5 +1,5 @@
 // 5時間枠・週間枠の使用率バーを描く
-const TRACK = '#3b3950'
+const TRACK = '#6c6990' // バーの下地: 背景が透けても右端が分かるよう、明るめにする
 const OK = '#8fd9bd'
 const WARN = '#f2a093'
 const MARK = '#c4b5fd'

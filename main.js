@@ -15,6 +15,8 @@ const RETRY_QUICK_MS = 60_000 // 通信できない・未ログインのとき(A
 // Claude Code の mod が書き出す状態ファイル。これが新しいあいだは API を呼ばない
 const MOD_DIR = path.join(os.homedir(), '.claude', 'usage-band', 'state')
 const MOD_FRESH_MS = 5 * 60_000
+// Claude Code(mod)が30分以上動いていないときは、API を呼ばない(起動時の1回と、手動の「今すぐ更新」を除く)
+const IDLE_MS = 30 * 60_000
 const argv = process.argv
 const SAMPLE = argv.includes('--sample')
 const SHOT = argv.includes('--shot') ? argv[argv.indexOf('--shot') + 1] : null
@@ -77,13 +79,15 @@ let nextPollAt = 0
 let backoffMs = 0
 let polling = false
 let cacheFile
+let lastModActivity = 0 // mod の更新を最後に見た時刻。0 は一度も見ていない(mod 未導入)
+let oneShotUntil = 0 // この時刻までは、アイドル中でも 1 回だけ API を呼んでよい(起動時・手動更新)
 
 // 前回の値と待ち状態を保存して、再起動・更新のたびに API を叩かないようにする
 const saveCache = () => {
   try {
     fs.writeFileSync(
       cacheFile,
-      JSON.stringify({ limits: usageState.limits, updatedAt: usageState.updatedAt, nextPollAt, backoffMs }),
+      JSON.stringify({ limits: usageState.limits, updatedAt: usageState.updatedAt, nextPollAt, backoffMs, lastModActivity }),
     )
   } catch {}
 }
@@ -93,6 +97,7 @@ const loadCache = () => {
     if (Array.isArray(c.limits)) usageState = { limits: c.limits, updatedAt: c.updatedAt || 0, error: null, nextPollAt: c.nextPollAt || 0 }
     nextPollAt = c.nextPollAt || 0
     backoffMs = c.backoffMs || 0
+    lastModActivity = c.lastModActivity || 0
   } catch {}
 }
 
@@ -148,6 +153,7 @@ const poll = async () => {
   }
   // Claude Code の mod が 5 分以内に更新していれば、その値を使う(API は呼ばない)
   const mod = readMod()
+  if (mod && (mod.limitsAt || 0) > lastModActivity) lastModActivity = mod.limitsAt
   if (mod && Date.now() - (mod.limitsAt || 0) < MOD_FRESH_MS) {
     if ((mod.limitsAt || 0) >= usageState.updatedAt) {
       usageState = { limits: mod.limits, updatedAt: mod.limitsAt, error: null, nextPollAt: 0 }
@@ -160,7 +166,13 @@ const poll = async () => {
   if (mod && (mod.limitsAt || 0) > usageState.updatedAt) {
     usageState = { ...usageState, limits: mod.limits, updatedAt: mod.limitsAt }
   }
+  // mod を使っていた形跡があり、30 分以上動いていないときは、API を呼ばない(アイドル)。
+  // 起動時の 1 回と、手動の「今すぐ更新」だけは呼ぶ。mod を一度も見ていないときは API だけで更新する
+  const idle = lastModActivity > 0 && Date.now() - lastModActivity > IDLE_MS
+  const oneShot = Date.now() < oneShotUntil
+  if (idle && !oneShot) return
   if (polling || Date.now() < nextPollAt) return
+  oneShotUntil = 0
   polling = true
   try {
     const limits = await getUsage()
@@ -317,6 +329,14 @@ const buildMenu = () => {
   }
   menu = Menu.buildFromTemplate([
     { label: '表示', type: 'checkbox', checked: settings.visible, click: toggle('visible') },
+    {
+      label: '今すぐ更新',
+      click: () => {
+        oneShotUntil = Date.now() + 2 * 60_000 // 429 の待ち中でなければ、すぐ 1 回だけ取りに行く
+        nextPollAt = Math.min(nextPollAt, Date.now() + (backoffMs ? nextPollAt - Date.now() : 0))
+        poll()
+      },
+    },
     { type: 'separator' },
     {
       label: '常に前面に表示(クリック透過)',
@@ -433,7 +453,10 @@ if (!SHOT && !app.requestSingleInstanceLock()) {
     settingsFile = path.join(app.getPath('userData'), 'settings.json')
     cacheFile = path.join(app.getPath('userData'), 'usage-cache.json')
     loadSettings()
-    if (!SAMPLE && !SHOT) loadCache()
+    if (!SAMPLE && !SHOT) {
+      loadCache()
+      oneShotUntil = Date.now() + 2 * 60_000 // 起動時は、アイドルでも 1 回だけ取りに行く
+    }
     if (SHOT) {
       settings.pos = null
       settings.visible = true

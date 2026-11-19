@@ -127,6 +127,6 @@ for (const g of document.querySelectorAll('.grip')) {
   g.addEventListener('pointercancel', end)
 }
 
-// リセットまでの時間が進むので、ペースの縦線は 1 分ごとに描き直す
-setInterval(render, 60_000)
+// リセットまでの時間が進むので、ペースの縦線は 10 秒ごとに描き直す(API は呼ばない)
+setInterval(render, 10_000)
 render()
